@@ -1,0 +1,2488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergent Stock Monitor | Forge Theory</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #16a34a; /* Increased contrast */
+            --danger: #dc2626;  /* Increased contrast */
+            --warning: #f59e0b;
+            --background: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --text-secondary: #a0aec0; /* Increased contrast */
+            --glow-green: rgba(16, 185, 129, 0.5);
+            --glow-red: rgba(239, 68, 68, 0.5);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            overflow-x: hidden;
+            height: 100vh;
+            touch-action: manipulation;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .background-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            z-index: -1;
+        }
+        
+        .background-gradient::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.1) 0%, transparent 50%);
+            animation: rotate 20s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .header {
+            background: rgba(30, 41, 59, 0.8);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            padding: 1rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .settings-btn {
+            background: rgba(51, 65, 85, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            color: var(--text);
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1.25rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .settings-btn:hover {
+            background: rgba(71, 85, 105, 0.8);
+        }
+
+        .watchlist-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(51, 65, 85, 0.8);
+            padding: 0.25rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(71, 85, 105, 0.5);
+        }
+
+        .watchlist-controls .layout-btn {
+            border: none;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+            white-space: nowrap;
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5);
+        }
+        
+        .export-btn:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5);
+        }
+        
+        .stock-search {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .stock-search input {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            background: rgba(30, 41, 59, 0.8);
+            color: var(--text);
+            font-size: 0.875rem;
+            min-width: 150px;
+            transition: all 0.3s ease;
+        }
+        
+        .stock-search input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .stock-search input::placeholder {
+            color: var(--text-secondary);
+        }
+        
+        .layout-controls {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .layout-btn {
+            background: rgba(51, 65, 85, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+            min-width: fit-content;
+        }
+        
+        .layout-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .layout-btn:hover::before {
+            left: 100%;
+        }
+        
+        .layout-btn:hover {
+            background: rgba(71, 85, 105, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .layout-btn.active {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            border-color: #3b82f6;
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.5);
+        }
+        
+        .layout-btn:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* Compact View - Big Buttons */
+        #compactView, #detailedView, #emergentView {
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+            width: 100%;
+            height: 100%;
+            animation: fadeInView 0.4s ease-out;
+        }
+
+        #compactView.active, #detailedView.active, #emergentView.active {
+            display: flex;
+        }
+        
+        .stock-big-btn {
+            display: block;
+            width: 100%;
+            max-width: 600px;
+            margin: 0;
+            padding: 2rem 1.5rem;
+            border-radius: 1.5rem;
+            border: 2px solid transparent;
+            cursor: pointer;
+            color: var(--text);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            background: rgba(30, 41, 59, 0.6);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+        
+        .stock-big-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.05), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .stock-big-btn:hover::before {
+            opacity: 1;
+        }
+        
+        .stock-big-btn:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
+        }
+        
+        .stock-big-btn:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+            transform: translateY(-4px) scale(1.02);
+        }
+        
+        .stock-big-btn.positive {
+            border-color: var(--success);
+            background: linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(30, 41, 59, 0.6) 100%);
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        .stock-big-btn.positive:hover {
+            box-shadow: 0 0 40px rgba(16, 185, 129, 0.5);
+        }
+        
+        .stock-big-btn.negative {
+            border-color: var(--danger);
+            background: linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(30, 41, 59, 0.6) 100%);
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.3);
+        }
+        
+        .stock-big-btn.negative:hover {
+            box-shadow: 0 0 40px rgba(239, 68, 68, 0.5);
+        }
+        
+        .stock-big-btn-symbol {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #f8fafc, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stock-big-btn-price {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: var(--text);
+        }
+        
+        .stock-big-btn-change {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .stock-big-btn-change.positive {
+            color: var(--success);
+            text-shadow: 0 0 15px var(--glow-green);
+        }
+        
+        .stock-big-btn-change.negative {
+            color: var(--danger);
+            text-shadow: 0 0 15px var(--glow-red);
+        }
+        
+        /* Modal, Detailed View, Emergent View styles remain the same */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            -webkit-backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal {
+            background: rgba(30, 41, 59, 0.95);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.3s ease;
+            position: relative;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .modal-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .modal-title h2 {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .close-btn {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: var(--danger);
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .close-btn:hover {
+            background: rgba(239, 68, 68, 0.4);
+            transform: rotate(90deg);
+        }
+        
+        .close-btn:focus-visible {
+            outline: 2px solid var(--danger);
+            outline-offset: 2px;
+            transform: rotate(90deg);
+        }
+        
+        .modal-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stat-card {
+            background: rgba(51, 65, 85, 0.3);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(71, 85, 105, 0.5);
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        
+        .chart-container {
+            background: rgba(51, 65, 85, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(71, 85, 105, 0.5);
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(51, 65, 85, 0.5);
+            padding: 0.25rem;
+            border-radius: 0.5rem;
+        }
+
+        .chart-type-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+        }
+
+        .chart-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+        
+        #stockChart {
+            width: 100%;
+            height: 300px;
+        }
+        
+        .prediction-section {
+            background: rgba(51, 65, 85, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(71, 85, 105, 0.5);
+        }
+        
+        .prediction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .prediction-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        
+        .prediction-confidence {
+            font-size: 0.875rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.375rem;
+            background: rgba(37, 99, 235, 0.2);
+            color: var(--primary);
+        }
+        
+        .prediction-result {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .prediction-arrow {
+            font-size: 3rem;
+            flex-shrink: 0;
+        }
+        
+        .prediction-details {
+            flex: 1;
+        }
+        
+        .prediction-direction {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .prediction-amount {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+        
+        .settings-form-group {
+            margin-bottom: 1.5rem;
+        }
+        .settings-form-group label {
+            display: block;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .settings-form-group input {
+            width: 100%;
+            padding: 0.75rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5);
+        }
+        
+        .btn-secondary {
+            background: rgba(51, 65, 85, 0.8);
+            color: var(--text);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(71, 85, 105, 0.8);
+        }
+        
+        /* Detailed View */
+        #compactView {
+            align-items: center;
+            padding: 1rem;
+            gap: 1rem;
+        }
+        
+        .stock-detail-card {
+            background: rgba(30, 41, 59, 0.6);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .stock-detail-card.dragging {
+            opacity: 0.5;
+            background: var(--primary);
+        }
+
+        .stock-detail-card:hover {
+            transform: translateX(4px);
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        
+        .stock-detail-card:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+            transform: translateX(4px);
+        }
+        
+        .detail-header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+        }
+        
+        .stock-symbol {
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .stock-price {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #f8fafc, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stock-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .stock-metrics {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.25rem 0;
+        }
+        
+        .metric-label {
+            color: var(--text-secondary);
+        }
+        
+        .stock-change {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .change-positive {
+            color: var(--success);
+            text-shadow: 0 0 10px var(--glow-green);
+            animation: glow-pulse 2s ease-in-out infinite;
+        }
+        
+        .change-negative {
+            color: var(--danger);
+            text-shadow: 0 0 10px var(--glow-red);
+            animation: glow-pulse 2s ease-in-out infinite;
+        }
+        
+        /* Emergent View */
+        
+        #marketCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .emergent-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1rem;
+        }
+        
+        .pattern-alerts {
+            background: rgba(30, 41, 59, 0.95);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            max-width: 320px;
+            pointer-events: auto;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            animation: slideInLeft 0.5s ease-out;
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .pattern-alerts h3 {
+            margin-bottom: 0.75rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .market-pulse {
+            background: rgba(30, 41, 59, 0.95);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            align-self: flex-end;
+            max-width: 220px;
+            pointer-events: auto;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            animation: slideInRight 0.5s ease-out;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .market-pulse h3 {
+            margin-bottom: 0.75rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .alert-item {
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+            border-radius: 0.375rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .alert-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .alert-item:hover {
+            background: rgba(59, 130, 246, 0.1);
+            transform: translateX(4px);
+        }
+        
+        .alert-item strong {
+            display: block;
+            margin-bottom: 0.25rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .pulse-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
+            background: rgba(51, 65, 85, 0.3);
+            border-radius: 0.375rem;
+        }
+        
+        .pulse-value {
+            font-weight: 700;
+            font-size: 1.25rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .pulse-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        .pulse-state {
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            background: rgba(51, 65, 85, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        @keyframes pulse-emergence {
+            0%, 100% { 
+                transform: scale(1); 
+                opacity: 1;
+                box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+            }
+            50% { 
+                transform: scale(1.05); 
+                opacity: 0.8;
+                box-shadow: 0 0 40px rgba(139, 92, 246, 0.8);
+            }
+        }
+        
+        .emerging-pattern {
+            animation: pulse-emergence 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow-pulse {
+            0%, 100% { filter: drop-shadow(0 0 5px currentColor); }
+            50% { filter: drop-shadow(0 0 15px currentColor); }
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .compact-view {
+                padding: 1rem;
+            }
+            
+            .stock-big-btn {
+                padding: 1.5rem 1rem;
+            }
+            
+            .stock-big-btn-symbol {
+                font-size: 2rem;
+            }
+            
+            .stock-big-btn-price {
+                font-size: 1.5rem;
+            }
+            
+            .stock-big-btn-change {
+                font-size: 1.25rem;
+            }
+            
+            .header {
+                padding: 0.75rem;
+            }
+            
+            .header h1 {
+                font-size: 1rem;
+            }
+            
+            .layout-btn, .export-btn {
+                padding: 0.375rem 0.75rem;
+                font-size: 0.75rem;
+            }
+            
+            .stock-search input {
+                min-width: 120px;
+                font-size: 0.75rem;
+            }
+            
+            .pattern-alerts, .market-pulse {
+                max-width: 250px;
+            }
+            
+            .modal {
+                width: 95%;
+                padding: 1.5rem;
+            }
+            
+            .modal-stats {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            #stockChart {
+                height: 200px;
+            }
+        }
+        
+        @keyframes fadeInView {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+    <style>
+        .group-header {
+            width: 100%;
+            max-width: 600px;
+            padding: 0.5rem 1rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            background: rgba(51, 65, 85, 0.5);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="background-gradient"></div>
+    <div id="notification-container"></div>
+    <div class="app-container">
+        <header class="header">
+            <div class="header-left">
+                <h1 id="app-title">⚡ Emergent Stock Monitor</h1>
+                <button class="settings-btn" id="settingsBtn" aria-label="Open settings">⚙️</button>
+                <button class="export-btn" id="exportBtn" aria-label="Export all stock data to JSON">📥 Export Data</button>
+            </div>
+            <div class="stock-search">
+                <input id="stockSearchInput" type="text" placeholder="Add stock (e.g. NVDA)" aria-label="Add stock by symbol">
+                <button id="stockSearchBtn" class="btn btn-primary" aria-label="Add stock to watchlist">Add</button>
+            </div>
+            <div class="watchlist-controls">
+                <button class="layout-btn" id="groupingBtn" aria-label="Toggle grouping by sector">Group by Sector</button>
+            </div>
+            <div class="layout-controls" role="toolbar" aria-label="Layout controls">
+                <button class="layout-btn active" data-layout="compact" aria-pressed="true">Compact</button>
+                <button class="layout-btn" data-layout="detailed" aria-pressed="false">Detailed</button>
+                <button class="layout-btn" data-layout="emergent" aria-pressed="false">Emergent</button>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <div role="region" aria-label="Compact stock view" class="active" id="compactView"></div>
+            <div role="region" aria-label="Detailed stock view" id="detailedView"></div>
+            
+            <div role="region" aria-label="Emergent market view" id="emergentView" style="flex: 1; position: relative; overflow: hidden;">
+                <canvas id="marketCanvas"></canvas>
+                <div class="emergent-overlay" aria-live="polite">
+                    <div class="pattern-alerts">
+                        <h3>🎯 Emergent Patterns</h3>
+                        <div class="alert-list" id="alertList"></div>
+                    </div>
+                    <div class="market-pulse">
+                        <h3>💓 Market Pulse</h3>
+                        <div class="pulse-indicator">
+                            <span class="pulse-label">Momentum</span>
+                            <span class="pulse-value" id="pulseValue">0.64</span>
+                        </div>
+                        <div class="pulse-indicator">
+                            <span class="pulse-label">Volatility</span>
+                            <span class="pulse-value" id="volatilityValue">0.42</span>
+                        </div>
+                        <div class="pulse-state" id="pulseState">Equilibrium</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalSymbol">
+            <div class="modal" role="document">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <h2 id="modalSymbol">AAPL</h2>
+                        <span id="modalName">Apple Inc.</span>
+                    </div>
+                    <button class="close-btn" id="closeModal" aria-label="Close modal">✕</button>
+                </div>
+                
+                <div class="modal-stats">
+                    <div class="stat-card">
+                        <div class="stat-label">Current Price</div>
+                        <div class="stat-value" id="modalPrice">$182.63</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Change</div>
+                        <div class="stat-value" id="modalChange">+1.24 (0.68%)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Volume</div>
+                        <div class="stat-value" id="modalVolume">45.23M</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Sector</div>
+                        <div class="stat-value" id="modalSector">Technology</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">RSI (14-day)</div>
+                        <div class="stat-value" id="modalRSI">N/A</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">MACD</div>
+                        <div class="stat-value" id="modalMACD">N/A</div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <div class="chart-title" id="chartTitle">📈 Historical Price (30 Days)</div>
+                        <div class="chart-controls" id="chartControls" role="toolbar" aria-label="Chart type controls">
+                            <button class="layout-btn chart-type-btn active" data-chart-type="line" aria-pressed="true">Line</button>
+                            <button class="layout-btn chart-type-btn" data-chart-type="candlestick" aria-pressed="false">Candlestick</button>
+                        </div>
+                    </div>
+                    <canvas id="stockChart"></canvas>
+                </div>
+                
+                <div class="prediction-section">
+                    <div class="prediction-header">
+                        <div class="prediction-title">🔮 Linear Regression Prediction</div>
+                        <div class="prediction-confidence" id="predictionConfidence">Confidence: 78%</div>
+                    </div>
+                    <div class="prediction-result">
+                        <div class="prediction-arrow" id="predictionArrow">📈</div>
+                        <div class="prediction-details">
+                            <div class="prediction-direction" id="predictionDirection">UPWARD TREND</div>
+                            <div class="prediction-amount" id="predictionAmount">Estimated +2.3% next day</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="exportSingle" aria-label="Export current stock data to JSON">Export This Stock</button>
+                    <button class="btn btn-danger" id="removeStockBtn" aria-label="Remove stock from watchlist">Remove Stock</button>
+                    <button class="btn btn-primary" id="closeModalBtn" aria-label="Close modal">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="settingsOverlay" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+            <div class="modal" role="document">
+                <div class="modal-header">
+                    <h2 id="settingsTitle">⚙️ Settings</h2>
+                    <button class="close-btn" id="closeSettingsBtn" aria-label="Close settings">✕</button>
+                </div>
+                <div class="settings-form-group">
+                    <label for="apiKeyInput">API Key (Future Use)</label>
+                    <input id="apiKeyInput" type="text" class="stock-search-input" placeholder="Optional API Key">
+                </div>
+                <div class="settings-form-group">
+                    <label for="refreshIntervalInput">Refresh Interval (seconds)</label>
+                    <input id="refreshIntervalInput" type="number" class="stock-search-input" min="10" placeholder="e.g., 60">
+                </div>
+                <div class="settings-form-group">
+                    <label for="rsiPeriodInput">RSI Period (days)</label>
+                    <input id="rsiPeriodInput" type="number" class="stock-search-input" min="2" max="50" placeholder="e.g., 14">
+                </div>
+                <div class="settings-form-group">
+                    <label>MACD Parameters (Fast, Slow, Signal)</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input id="macdFastInput" type="number" class="stock-search-input" placeholder="12">
+                        <input id="macdSlowInput" type="number" class="stock-search-input" placeholder="26">
+                        <input id="macdSignalInput" type="number" class="stock-search-input" placeholder="9">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="resetSettingsBtn">Reset to Defaults</button>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class EmergentStockMonitor {
+            constructor() {
+                this.stocks = [];
+                this.historicalData = new Map();
+                this.currentLayout = 'compact';
+                this.particleSystem = null;
+                this.patternDetector = null;
+                this.marketPulse = null;
+                this.animationId = null;
+                this.currentStock = null;
+                this.watchlistKey = 'esm_watchlist';
+                this.settingsKey = 'esm_settings';
+                this.groupBySector = false;
+                this.dataUpdateInterval = null;
+                this.currentChartType = 'line';
+                this.colors = {
+                    success: '#16a34a',
+                    danger: '#dc2626'
+                };
+                this.settings = {
+                    apiKey: 'temp_3b0255b5091a349c059a2c1044636b43', // Default demo key
+                    refreshInterval: 60,
+                    rsiPeriod: 14,
+                    macdFast: 12,
+                    macdSlow: 26,
+                    macdSignal: 9
+                };
+                this.initializeApp();
+            }
+
+            showNotification(message, type = 'info', duration = 5000) {
+                // This method will be implemented in the full script.
+            }
+
+            loadSettings() {
+                const savedSettings = localStorage.getItem(this.settingsKey);
+                if (savedSettings) {
+                    this.settings = JSON.parse(savedSettings);
+                }
+                document.getElementById('apiKeyInput').value = this.settings.apiKey;
+                document.getElementById('refreshIntervalInput').value = this.settings.refreshInterval;
+                document.getElementById('rsiPeriodInput').value = this.settings.rsiPeriod;
+                document.getElementById('macdFastInput').value = this.settings.macdFast;
+                document.getElementById('macdSlowInput').value = this.settings.macdSlow;
+                document.getElementById('macdSignalInput').value = this.settings.macdSignal;
+            }
+
+            saveSettings() {
+                localStorage.setItem(this.settingsKey, JSON.stringify(this.settings));
+            }
+            
+            loadColors() {
+                const computedStyle = getComputedStyle(document.documentElement);
+                this.colors.success = computedStyle.getPropertyValue('--success').trim() || this.colors.success;
+                this.colors.danger = computedStyle.getPropertyValue('--danger').trim() || this.colors.danger;
+            }
+
+            async initializeApp() {
+                this.loadSettings();
+                this.loadColors();
+                this.generateSampleData();
+                await this.generateHistoricalData();
+                this.setupEventListeners();
+                this.renderStockCards();
+                this.initializeEmergentSystems();
+                this.startDataUpdates();
+            }
+            
+            generateSampleData() {
+                const saved = localStorage.getItem(this.watchlistKey);
+                if (saved) {
+                    try {
+                        this.stocks = JSON.parse(saved);
+                        return;
+                    } catch {}
+                }
+                this.stocks = [
+                    { symbol: 'AAPL', name: 'Apple Inc.', price: 182.63, change: 1.24, changePercent: 0.68, volume: 45231876, sector: 'Technology' },
+                    { symbol: 'MSFT', name: 'Microsoft Corp.', price: 407.54, change: -0.87, changePercent: -0.21, volume: 28765432, sector: 'Technology' },
+                    { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 151.87, change: 2.34, changePercent: 1.56, volume: 31298765, sector: 'Technology' },
+                    { symbol: 'AMZN', name: 'Amazon.com Inc.', price: 178.22, change: -1.12, changePercent: -0.62, volume: 39876543, sector: 'Consumer Cyclical' },
+                    { symbol: 'TSLA', name: 'Tesla Inc.', price: 175.79, change: 5.43, changePercent: 3.19, volume: 102345678, sector: 'Automotive' },
+                    { symbol: 'META', name: 'Meta Platforms Inc.', price: 485.75, change: 3.21, changePercent: 0.67, volume: 18765432, sector: 'Technology' }
+                ];
+            }
+
+            saveWatchlist() {
+                localStorage.setItem(this.watchlistKey, JSON.stringify(this.stocks));
+            }
+            
+            async generateHistoricalData() {
+                const fetchHistorical = async (symbol, days = 30) => {
+                    const cacheKey = `historical_${symbol}`;
+                    const cached = localStorage.getItem(cacheKey);
+                    const now = Date.now();
+                    
+                    if (cached) {
+                        const { timestamp, data } = JSON.parse(cached);
+                        if (now - timestamp < 12 * 60 * 60 * 1000) return data;
+                    }
+                    
+                    const end = Math.floor(now / 1000);
+                    const start = end - days * 24 * 60 * 60;
+                    const url = `https://corsproxy.io/?https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&period1=${start}&period2=${end}`;
+                    const headers = {
+                        'Corsproxy-Api-Key': this.settings.apiKey
+                    };
+                    
+                    try {
+                        const response = await fetch(url, { headers });
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.message || 'Failed to fetch historical data');
+
+                        const result = data.chart.result[0];
+                        const timestamps = result.timestamp;
+                        const prices = result.indicators.quote[0].close;
+                        const volumes = result.indicators.quote[0].volume;
+                        
+                        const { open, high, low, close } = result.indicators.quote[0];
+
+                        const historical = timestamps.map((ts, i) => ({
+                            date: new Date(ts * 1000).toISOString().slice(0, 10),
+                            open: open[i], high: high[i], low: low[i], close: close[i],
+                            price: close[i], // for compatibility
+                            volume: volumes[i]
+                        }));
+                        
+                        localStorage.setItem(cacheKey, JSON.stringify({ timestamp: now, data: historical }));
+                        return historical;
+                    } catch (e) {
+                        if (cached) return JSON.parse(cached).data;
+                        return [];
+                    }
+                };
+                
+                await Promise.all(this.stocks.map(async stock => {
+                    const history = await fetchHistorical(stock.symbol);
+                    this.historicalData.set(stock.symbol, history);
+                }));
+            }
+
+            async fetchLatestPrices() {
+                // WARNING: The current fetch to Yahoo Finance via corsproxy.io is returning 401 Unauthorized.
+                // This may be due to API changes, proxy issues, or new authentication requirements.
+                // Consider using a different proxy, a backend service, or a different stock data API.
+                const symbols = this.stocks.map(s => s.symbol).join(',');
+                const url = `https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}`;
+                const headers = {
+                    'Corsproxy-Api-Key': this.settings.apiKey
+                };
+                try {
+                    const response = await fetch(url, { headers });
+                    const data = await response.json();
+                    if (response.ok && data?.quoteResponse?.result) {
+                        data.quoteResponse.result.forEach(q => {
+                            const stock = this.stocks.find(s => s.symbol === q.symbol);
+                            if (stock && q.regularMarketPrice != null) {
+                                stock.price = q.regularMarketPrice;
+                                stock.change = q.regularMarketChange || 0;
+                                stock.changePercent = q.regularMarketChangePercent || 0;
+                                stock.volume = q.regularMarketVolume || 0;
+
+                                const history = this.historicalData.get(stock.symbol);
+                                if (history && history.length > 0) {
+                                    const today = new Date().toISOString().slice(0, 10);
+                                    const lastEntry = history[history.length - 1];
+
+                                    if (lastEntry.date === today) {
+                                        // Update today's price
+                                        lastEntry.price = stock.price;
+                                    } else {
+                                        // Add new day's price
+                                        history.push({ 
+                                            date: today, 
+                                            price: stock.price, 
+                                            close: stock.price,
+                                            open: lastEntry.close, // Approximate open
+                                            high: Math.max(lastEntry.close, stock.price),
+                                            low: Math.min(lastEntry.close, stock.price),
+                                            volume: stock.volume });
+                                        // Keep history at a reasonable length
+                                        if (history.length > 31) history.shift();
+                                    }
+                                }
+                            }
+                        });
+                        this.showNotification('Stock prices updated successfully.', 'success');
+                        this.saveWatchlist();
+                    } else {
+                        throw new Error(data.message || 'Failed to fetch latest prices');
+                    }
+                } catch (e) {
+                    this.showNotification('Failed to update stock prices. Displaying last known values.', 'error');
+                } finally {
+                    // If a modal is open, refresh its chart
+                    const overlay = document.getElementById('modalOverlay');
+                    if (this.currentStock && overlay && overlay.classList.contains('active')) {
+                        this.drawStockChart(this.currentStock);
+                    }
+                }
+            }
+
+            setupEventListeners() {
+                document.querySelectorAll('.layout-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const layout = e.target.dataset.layout;
+                        this.switchLayout(layout);
+                        document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('.layout-btn').forEach(b => b.setAttribute('aria-pressed', 'false'));
+                        e.target.classList.add('active');
+                        e.target.setAttribute('aria-pressed', 'true');
+                    });
+                });
+                
+                document.getElementById('groupingBtn').addEventListener('click', (e) => {
+                    this.groupBySector = !this.groupBySector;
+                    e.target.classList.toggle('active', this.groupBySector);
+                    this.renderStockCards();
+                });
+
+                document.getElementById('settingsBtn').addEventListener('click', () => {
+                    document.getElementById('settingsOverlay').classList.add('active');
+                });
+                document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+                    document.getElementById('settingsOverlay').classList.remove('active');
+                });
+                document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+                    this.settings.apiKey = document.getElementById('apiKeyInput').value;
+                    this.settings.refreshInterval = parseInt(document.getElementById('refreshIntervalInput').value, 10) || 60;
+                    this.settings.rsiPeriod = parseInt(document.getElementById('rsiPeriodInput').value, 10) || 14;
+                    this.settings.macdFast = parseInt(document.getElementById('macdFastInput').value, 10) || 12;
+                    this.settings.macdSlow = parseInt(document.getElementById('macdSlowInput').value, 10) || 26;
+                    this.settings.macdSignal = parseInt(document.getElementById('macdSignalInput').value, 10) || 9;
+                    this.saveSettings();
+                    this.startDataUpdates(); // Restart with new interval
+                    this.showNotification('Settings saved successfully.', 'success');
+                    document.getElementById('settingsOverlay').classList.remove('active');
+                });
+
+                document.getElementById('resetSettingsBtn').addEventListener('click', () => {
+                    this.settings = {
+                        apiKey: 'temp_3b0255b5091a349c059a2c1044636b43',
+                        refreshInterval: 60,
+                        rsiPeriod: 14,
+                        macdFast: 12,
+                        macdSlow: 26,
+                        macdSignal: 9
+                    };
+                    this.loadSettings();
+                    this.showNotification('Settings reset to defaults.', 'info');
+                });
+
+                document.getElementById('exportBtn').addEventListener('click', () => this.exportAllData());
+                document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
+                document.getElementById('closeModalBtn').addEventListener('click', () => this.closeModal());
+                document.getElementById('exportSingle').addEventListener('click', () => {
+                    if (this.currentStock) this.exportStockData(this.currentStock);
+                });
+                
+                document.getElementById('removeStockBtn').addEventListener('click', () => {
+                    if (this.currentStock) this.removeStock(this.currentStock.symbol);
+                });
+
+                document.getElementById('modalOverlay').addEventListener('click', (e) => {
+                    if (e.target.id === 'modalOverlay') this.closeModal();
+                });
+
+                document.getElementById('stockSearchBtn').addEventListener('click', async () => {
+                    const input = document.getElementById('stockSearchInput');
+                    const symbol = input.value.trim().toUpperCase();
+                    if (!symbol) return;
+                    input.disabled = true;
+                    try {
+                        await this.addStockBySymbol(symbol);
+                        input.value = '';
+                    } catch (e) {
+                        this.showNotification('Could not add stock: ' + (e.message || 'Unknown error'), 'error');
+                    }
+                    input.disabled = false;
+                });
+                
+                document.getElementById('stockSearchInput').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') document.getElementById('stockSearchBtn').click();
+                });
+
+                document.querySelectorAll('.chart-type-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.currentChartType = e.target.dataset.chartType;
+                        document.querySelectorAll('.chart-type-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        if (this.currentStock) this.drawStockChart(this.currentStock);
+                    });
+                });
+            }
+
+            async addStockBySymbol(symbol) {
+                if (this.stocks.some(s => s.symbol === symbol)) {
+                    throw new Error('Stock already in watchlist');
+                }
+                
+                const url = `https://corsproxy.io/?https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
+                const headers = {
+                    'Corsproxy-Api-Key': this.settings.apiKey
+                };
+                const resp = await fetch(url, { headers });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.message || 'Symbol not found');
+                
+                if (!data.quoteResponse?.result?.length) {
+                    throw new Error('Symbol not found');
+                }
+                
+                const q = data.quoteResponse.result[0];
+                if (!q.symbol || q.regularMarketPrice == null) {
+                    throw new Error('Invalid stock data');
+                }
+                
+                const stock = {
+                    symbol: q.symbol,
+                    name: q.shortName || q.longName || q.symbol,
+                    price: q.regularMarketPrice,
+                    change: q.regularMarketChange || 0,
+                    changePercent: q.regularMarketChangePercent || 0,
+                    volume: q.regularMarketVolume || 0,
+                    sector: q.sector || 'Unknown'
+                };
+                
+                this.stocks.push(stock);
+                this.saveWatchlist();
+                
+                await this.generateHistoricalDataForSymbol(stock.symbol);
+                this.renderStockCards();
+                this.showNotification(`${symbol} added to your watchlist.`, 'success');
+                if (this.particleSystem) this.particleSystem.addParticle(stock);
+            }
+
+            async generateHistoricalDataForSymbol(symbol) {
+                const cacheKey = `historical_${symbol}`;
+                const now = Date.now();
+                const end = Math.floor(now / 1000);
+                const start = end - 30 * 24 * 60 * 60;
+                const url = `https://corsproxy.io/?https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&period1=${start}&period2=${end}`;
+                const headers = {
+                    'Corsproxy-Api-Key': this.settings.apiKey
+                };
+                
+                try {
+                    const response = await fetch(url, { headers });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message || 'Failed to fetch historical data for symbol');
+                    const result = data.chart.result[0];
+                    const timestamps = result.timestamp;
+                    const prices = result.indicators.quote[0].close;
+                    const volumes = result.indicators.quote[0].volume;
+                    
+                    const { open, high, low, close } = result.indicators.quote[0];
+
+                    const historical = timestamps.map((ts, i) => ({
+                        date: new Date(ts * 1000).toISOString().slice(0, 10),
+                        open: open[i], high: high[i], low: low[i], close: close[i],
+                        price: close[i], // for compatibility
+                        volume: volumes[i]
+                    }));
+                    
+                    localStorage.setItem(cacheKey, JSON.stringify({ timestamp: now, data: historical }));                    
+                    this.historicalData.set(symbol, historical);
+                    return historical;
+                } catch (e) {
+                    return [];
+                }
+            }
+            
+            removeStock(symbol) {
+                const index = this.stocks.findIndex(s => s.symbol === symbol);
+                if (index > -1) {
+                    this.stocks.splice(index, 1);
+                    this.historicalData.delete(symbol);
+                    
+                    if (this.particleSystem) {
+                        this.particleSystem.removeParticle(symbol);
+                    }
+                    
+                    this.saveWatchlist();
+                    this.renderStockCards();
+                    this.closeModal();
+                    this.showNotification(`${symbol} removed from your watchlist.`, 'info');
+                }
+            }
+
+            switchLayout(layout) {
+                if (this.currentLayout === layout) return;
+
+                const oldView = document.getElementById(`${this.currentLayout}View`);
+                if (oldView) oldView.classList.remove('active');
+
+                const newView = document.getElementById(`${layout}View`);
+                if (newView) newView.classList.add('active');
+                
+                this.currentLayout = layout;
+                
+                if (layout === 'emergent' && this.particleSystem) {
+                    this.particleSystem.reset();
+                }
+            }
+            
+            renderStockCards() {
+                const compactView = document.getElementById('compactView');
+                const detailedView = document.getElementById('detailedView');
+                compactView.innerHTML = '';
+                detailedView.innerHTML = '';
+
+                if (this.groupBySector) {
+                    const grouped = this.stocks.reduce((groups, stock) => {
+                        const sector = stock.sector || 'Other';
+                        if (!groups[sector]) groups[sector] = [];
+                        groups[sector].push(stock);
+                        return groups;
+                    }, {});
+
+                    Object.keys(grouped).sort().forEach(sector => {
+                        const groupContainer = document.createElement('div');
+                        groupContainer.innerHTML = `<h3 class="group-header">${sector}</h3>`;
+                        compactView.appendChild(groupContainer.cloneNode(true));
+                        detailedView.appendChild(groupContainer);
+
+                        grouped[sector].forEach(stock => {
+                            this.appendStockCards(stock, compactView, detailedView);
+                        });
+                    });
+                } else {
+                    this.stocks.forEach(stock => {
+                        this.appendStockCards(stock, compactView, detailedView);
+                    });
+                }
+
+                this.setupDragAndDrop();
+            }
+
+            appendStockCards(stock, compactView, detailedView) {
+                const bigBtn = this.createBigButton(stock);
+                bigBtn.addEventListener('click', () => this.openStockModal(stock));
+                compactView.appendChild(bigBtn);
+
+                const detailedCard = this.createDetailedCard(stock);
+                detailedCard.addEventListener('click', () => this.openStockModal(stock));
+                detailedView.appendChild(detailedCard);
+            }
+
+            setupDragAndDrop() {
+                const container = document.getElementById('detailedView');
+                const draggables = container.querySelectorAll('.stock-detail-card');
+                let dragSrcEl = null;
+
+                draggables.forEach(el => {
+                    el.addEventListener('dragstart', (e) => {
+                        dragSrcEl = el;
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/html', el.innerHTML);
+                        el.classList.add('dragging');
+                    });
+
+                    el.addEventListener('dragover', (e) => e.preventDefault());
+                    el.addEventListener('drop', (e) => {
+                        e.stopPropagation();
+                        if (dragSrcEl !== el) {
+                            const fromIndex = Array.from(draggables).indexOf(dragSrcEl);
+                            const toIndex = Array.from(draggables).indexOf(el);
+                            const movedStock = this.stocks.splice(fromIndex, 1)[0];
+                            this.stocks.splice(toIndex, 0, movedStock);
+                            this.saveWatchlist();
+                            this.renderStockCards();
+                        }
+                    });
+                    el.addEventListener('dragend', () => el.classList.remove('dragging'));
+                });
+            }
+            
+            createBigButton(stock) {
+                const btn = document.createElement('button');
+                btn.className = `stock-big-btn ${stock.change >= 0 ? 'positive' : 'negative'}`;
+                btn.setAttribute('aria-label', `View details for ${stock.name || stock.symbol}`);
+                
+                const arrow = stock.change >= 0 ? '▲' : '▼';
+                
+                btn.innerHTML = `
+                    <div class="stock-big-btn-symbol">${stock.symbol}</div>
+                    <div class="stock-big-btn-price">$${stock.price.toFixed(2)}</div>
+                    <div class="stock-big-btn-change ${stock.change >= 0 ? 'positive' : 'negative'}">
+                        ${arrow} ${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)} (${stock.changePercent >= 0 ? '+' : ''}${stock.changePercent.toFixed(2)}%)
+                    </div>
+                `;
+                
+                return btn;
+            }
+            
+            createDetailedCard(stock) {
+                const card = document.createElement('div');
+                card.className = `stock-detail-card`;
+                card.setAttribute('role', 'button');
+                card.setAttribute('tabindex', '0');
+                card.setAttribute('draggable', 'true');
+                card.setAttribute('aria-label', `View details for ${stock.name || stock.symbol}`);
+                
+                const arrow = stock.change >= 0 ? '▲' : '▼';
+                
+                card.innerHTML = `
+                    <div class="detail-header">
+                        <div class="stock-symbol">${stock.symbol}</div>
+                        <div class="stock-price">$${stock.price.toFixed(2)}</div>
+                    </div>
+                    <div class="stock-info">
+                        <div>${stock.name}</div>
+                        <div class="stock-change ${stock.change >= 0 ? 'change-positive' : 'change-negative'}">
+                            ${arrow} ${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)} (${stock.change >= 0 ? '+' : ''}${stock.changePercent.toFixed(2)}%)
+                        </div>
+                    </div>
+                    <div class="stock-metrics">
+                        <div class="metric">
+                            <span class="metric-label">Volume:</span>
+                            <span>${this.formatVolume(stock.volume)}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Sector:</span>
+                            <span>${stock.sector}</span>
+                        </div>
+                    </div>
+                `;
+                
+                card.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') this.openStockModal(stock);
+                });
+
+                return card;
+            }
+            
+            openStockModal(stock) {
+                this.currentStock = stock;
+
+                const setText = (id, value) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = value;
+                };
+                setText('modalSymbol', stock.symbol);
+                setText('modalName', stock.name);
+                setText('modalPrice', `$${stock.price.toFixed(2)}`);
+
+                const arrow = stock.change >= 0 ? '▲' : '▼';
+                const changeEl = document.getElementById('modalChange');
+                if (changeEl) {
+                    changeEl.textContent = `${arrow} ${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)} (${stock.changePercent.toFixed(2)}%)`;
+                    changeEl.className = `stat-value ${stock.change >= 0 ? 'change-positive' : 'change-negative'}`;
+                }
+
+                setText('modalVolume', this.formatVolume(stock.volume));
+                setText('modalSector', stock.sector);
+
+                const rsiLabel = document.querySelector('#modalRSI ~ .stat-label');
+                if (rsiLabel) rsiLabel.textContent = `RSI (${this.settings.rsiPeriod}-day)`;
+                const macdLabel = document.querySelector('#modalMACD ~ .stat-label');
+                if (macdLabel) macdLabel.textContent = `MACD (${this.settings.macdFast}, ${this.settings.macdSlow}, ${this.settings.macdSignal})`;
+
+                this.drawStockChart(stock);
+                this.generatePrediction(stock);
+                const indicators = this.calculateIndicators(stock);
+                this.displayIndicator('RSI', indicators.rsi);
+                this.displayIndicator('MACD', indicators.macd);
+
+                const overlay = document.getElementById('modalOverlay');
+                if (overlay) overlay.classList.add('active');
+            }
+            
+            closeModal() {
+                document.getElementById('modalOverlay').classList.remove('active');
+            }
+            
+            drawStockChart(stock) {
+                const canvas = document.getElementById('stockChart');
+                const chartTitle = document.getElementById('chartTitle');
+                const ctx = canvas.getContext('2d');
+                const history = this.historicalData.get(stock.symbol);
+                
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                chartTitle.textContent = `📈 Historical Price (${history?.length || 0} Days)`;
+
+                if (this.currentChartType === 'candlestick') {
+                    this.drawCandlestickChart(ctx, history, stock);
+                } else {
+                    this.drawLineChart(ctx, history, stock);
+                }
+            }
+
+            drawLineChart(ctx, history, stock) {
+                const canvas = ctx.canvas;
+                
+                if (!history?.length) {
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = '18px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('No historical data', canvas.width / 2, canvas.height / 2);
+                    return;
+                }
+                
+                const padding = 40;
+                const width = canvas.width - padding * 2;
+                const height = canvas.height - padding * 2;
+                
+                const prices = history.map(d => d.price);
+                const minPrice = Math.min(...prices);
+                const maxPrice = Math.max(...prices);
+                const priceRange = maxPrice - minPrice;
+                
+                ctx.strokeStyle = 'rgba(71, 85, 105, 0.3)';
+                ctx.lineWidth = 1;
+                
+                for (let i = 0; i <= 5; i++) {
+                    const y = padding + (height / 5) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(padding, y);
+                    ctx.lineTo(canvas.width - padding, y);
+                    ctx.stroke();
+                    
+                    const price = maxPrice - (priceRange / 5) * i;
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = '10px Arial';
+                    ctx.textAlign = 'right';
+                    ctx.fillText(`$${price.toFixed(2)}`, padding - 5, y + 4);
+                }
+                
+                ctx.beginPath();
+                ctx.strokeStyle = stock.change >= 0 ? this.colors.success : this.colors.danger;
+                ctx.lineWidth = 3;
+                
+                history.forEach((data, i) => {
+                    const x = padding + (width / (history.length - 1)) * i;
+                    const y = padding + height - ((data.price - minPrice) / priceRange) * height;
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+                
+                const gradient = ctx.createLinearGradient(0, padding, 0, canvas.height - padding);
+                gradient.addColorStop(0, stock.change >= 0 ? this.colors.success + '4D' : this.colors.danger + '4D'); // 4D is ~0.3 alpha
+                gradient.addColorStop(1, 'rgba(51, 65, 85, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.moveTo(padding, canvas.height - padding);
+                history.forEach((data, i) => {
+                    const x = padding + (width / (history.length - 1)) * i;
+                    const y = padding + height - ((data.price - minPrice) / priceRange) * height;
+                    ctx.lineTo(x, y);
+                });
+                ctx.lineTo(canvas.width - padding, canvas.height - padding);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            drawCandlestickChart(ctx, history, stock) {
+                const canvas = ctx.canvas;
+                if (!history?.length) {
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = '18px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('No historical data', canvas.width / 2, canvas.height / 2);
+                    return;
+                }
+
+                const padding = 40;
+                const width = canvas.width - padding * 2;
+                const height = canvas.height - padding * 2;
+
+                const minPrice = Math.min(...history.map(d => d.low));
+                const maxPrice = Math.max(...history.map(d => d.high));
+                const priceRange = maxPrice - minPrice;
+
+                const candleWidth = Math.max(3, (width / history.length) * 0.7);
+
+                // Draw grid lines and labels
+                ctx.strokeStyle = 'rgba(71, 85, 105, 0.3)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i <= 5; i++) {
+                    const y = padding + (height / 5) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(padding, y);
+                    ctx.lineTo(canvas.width - padding, y);
+                    ctx.stroke();
+                    
+                    const price = maxPrice - (priceRange / 5) * i;
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = '10px Arial';
+                    ctx.textAlign = 'right';
+                    ctx.fillText(`$${price.toFixed(2)}`, padding - 5, y + 4);
+                }
+
+                history.forEach((data, i) => {
+                    const x = padding + (width / history.length) * (i + 0.5);
+                    
+                    const yOpen = padding + height - ((data.open - minPrice) / priceRange) * height;
+                    const yClose = padding + height - ((data.close - minPrice) / priceRange) * height;
+                    const yHigh = padding + height - ((data.high - minPrice) / priceRange) * height;
+                    const yLow = padding + height - ((data.low - minPrice) / priceRange) * height;
+
+                    const isBullish = data.close >= data.open;
+                    ctx.strokeStyle = isBullish ? this.colors.success : this.colors.danger;
+                    ctx.fillStyle = isBullish ? this.colors.success : this.colors.danger;
+
+                    // Draw wick
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(x, yHigh);
+                    ctx.lineTo(x, yLow);
+                    ctx.stroke();
+
+                    // Draw candle body
+                    ctx.fillRect(x - candleWidth / 2, Math.min(yOpen, yClose), candleWidth, Math.abs(yOpen - yClose));
+                });
+            }
+            
+            linearRegression(prices) {
+                const n = prices.length;
+                if (n < 2) return null;
+                
+                let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+                for (let i = 0; i < n; i++) {
+                    sumX += i;
+                    sumY += prices[i];
+                    sumXY += i * prices[i];
+                    sumXX += i * i;
+                }
+                
+                const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+                const intercept = (sumY - slope * sumX) / n;
+                
+                return { slope, intercept, predict: (x) => intercept + slope * x };
+            }
+            
+            generatePrediction(stock) {
+                const history = this.historicalData.get(stock.symbol);
+                if (!history?.length) return;
+                
+                const recentPrices = history.slice(-7).map(d => d.price);
+                const regression = this.linearRegression(recentPrices);
+                
+                if (!regression) return;
+                
+                const predictedPrice = regression.predict(recentPrices.length);
+                const lastPrice = recentPrices[recentPrices.length - 1];
+                const percentChange = ((predictedPrice - lastPrice) / lastPrice) * 100;
+                
+                // Calculate R² for confidence
+                const mean = recentPrices.reduce((a, b) => a + b) / recentPrices.length;
+                let ssTot = 0, ssRes = 0;
+                recentPrices.forEach((price, i) => {
+                    ssTot += (price - mean) ** 2;
+                    ssRes += (price - regression.predict(i)) ** 2;
+                });
+                const r2 = 1 - (ssRes / ssTot);
+                const confidence = Math.max(50, Math.min(95, Math.round(70 + r2 * 25)));
+                
+                const isUpward = percentChange > 0;
+                
+                document.getElementById('predictionConfidence').textContent = `Confidence: ${confidence}%`;
+                document.getElementById('predictionArrow').textContent = isUpward ? '📈' : '📉';
+                document.getElementById('predictionDirection').textContent = isUpward ? 'UPWARD TREND' : 'DOWNWARD TREND';
+                document.getElementById('predictionDirection').className = `prediction-direction ${isUpward ? 'change-positive' : 'change-negative'}`;
+                document.getElementById('predictionAmount').textContent = `Estimated ${isUpward ? '+' : ''}${percentChange.toFixed(2)}% next day`;
+            }
+            
+            calculateIndicators(stock) {
+                const history = this.historicalData.get(stock.symbol);
+                const { rsiPeriod, macdFast, macdSlow, macdSignal } = this.settings;
+                const requiredDataLength = Math.max(rsiPeriod + 1, macdSlow + macdSignal);
+
+                if (!history || history.length < requiredDataLength) return { rsi: null, macd: null };
+
+                const prices = history.map(d => d.price);
+
+                // RSI
+                let gains = 0, losses = 0;
+                for (let i = 1; i <= rsiPeriod; i++) {
+                    const diff = prices[prices.length - i] - prices[prices.length - i - 1];
+                    if (diff > 0) gains += diff; else losses -= diff;
+                }
+                const avgGain = gains / rsiPeriod;
+                const avgLoss = losses / rsiPeriod;
+                const rs = avgGain / avgLoss;
+                const rsi = 100 - (100 / (1 + rs));
+
+                // MACD
+                const ema = (data, period) => {
+                    const k = 2 / (period + 1);
+                    let emaValues = [data.slice(0, period).reduce((a, b) => a + b) / period];
+                    for (let i = period; i < data.length; i++) {
+                        emaValues.push((data[i] * k) + (emaValues[emaValues.length - 1] * (1 - k)));
+                    }
+                    return emaValues;
+                };
+                const emaFast = ema(prices, macdFast);
+                const emaSlow = ema(prices, macdSlow);
+                const macdLine = emaFast[emaFast.length - 1] - emaSlow[emaSlow.length - 1];
+
+                return { rsi, macd: macdLine };
+            }
+
+            displayIndicator(name, value) {
+                const el = document.getElementById(`modal${name}`);
+                if (!el) return;
+
+                if (value === null || isNaN(value)) {
+                    el.textContent = 'N/A';
+                    el.className = 'stat-value';
+                    return;
+                }
+
+                el.textContent = value.toFixed(2);
+                el.className = 'stat-value';
+
+                if (name === 'RSI') {
+                    if (value > 70) el.classList.add('change-negative'); // Overbought
+                    if (value < 30) el.classList.add('change-positive'); // Oversold
+                } else if (name === 'MACD') {
+                    if (value > 0) el.classList.add('change-positive'); // Bullish
+                    if (value < 0) el.classList.add('change-negative'); // Bearish
+                }
+            }
+
+            get a() {
+                return this._a;
+            }
+            set a(value) {
+                this._a = value;
+            }
+            formatVolume(volume) {
+                if (volume >= 1000000) return (volume / 1000000).toFixed(2) + 'M';
+                if (volume >= 1000) return (volume / 1000).toFixed(2) + 'K';
+                return volume.toString();
+            }
+            
+            exportAllData() {
+                const data = this.stocks.map(stock => ({
+                    Symbol: stock.symbol,
+                    Name: stock.name,
+                    Price: stock.price.toFixed(2),
+                    Change: stock.change.toFixed(2),
+                    'Change %': stock.changePercent.toFixed(2),
+                    Volume: stock.volume,
+                    Sector: stock.sector,
+                    Historical: this.historicalData.get(stock.symbol)
+                }));
+                
+                this.downloadJSON(data, 'all-stocks-data.json');
+            }
+            
+            exportStockData(stock) {
+                const data = {
+                    Symbol: stock.symbol,
+                    Name: stock.name,
+                    CurrentPrice: stock.price.toFixed(2),
+                    Change: stock.change.toFixed(2),
+                    'Change %': stock.changePercent.toFixed(2),
+                    Volume: stock.volume,
+                    Sector: stock.sector,
+                    HistoricalData: this.historicalData.get(stock.symbol)
+                };
+                
+                this.downloadJSON(data, `${stock.symbol}-data.json`);
+            }
+            
+            downloadJSON(data, filename) {
+                const json = JSON.stringify(data, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            initializeEmergentSystems() {
+                this.particleSystem = new MarketParticleSystem(this.stocks);
+                this.patternDetector = new PatternEmergence(this.stocks);
+                this.marketPulse = new MarketPulse(this.stocks);
+                
+                const canvas = document.getElementById('marketCanvas');
+                this.particleSystem.initializeCanvas(canvas);
+                
+                this.animate();
+            }
+            
+            animate() {
+                if (this.currentLayout === 'emergent' && this.particleSystem) {
+                    this.particleSystem.update();
+                    this.particleSystem.render();
+                    
+                    const patterns = this.patternDetector.detectEmergentPatterns(this.stocks);
+                    this.updatePatternAlerts(patterns);
+                    
+                    const pulse = this.marketPulse.calculateMarketPulse(this.stocks);
+                    this.updateMarketPulse(pulse);
+                }
+                
+                this.animationId = requestAnimationFrame(() => this.animate());
+            }
+            
+            updatePatternAlerts(patterns) {
+                const alertList = document.getElementById('alertList');
+                alertList.setAttribute('aria-live', 'off'); // Pause live region during update
+                alertList.innerHTML = '';
+                
+                patterns.slice(0, 3).forEach(pattern => {
+                    const emoji = pattern.type === 'momentum_cluster' ? '🚀' :
+                                pattern.type === 'sector_movement' ? '📊' :
+                                pattern.type === 'volume_anomaly' ? '⚡' : '🎯';
+
+                    const alertItem = document.createElement('div');
+                    alertItem.className = 'alert-item';
+                    alertItem.innerHTML = `
+                        <strong>${emoji} ${pattern.type.replace(/_/g, ' ').toUpperCase()}</strong>
+                        <div>${pattern.stocks.join(', ')}</div>
+                    `;
+                    alertList.appendChild(alertItem);
+                });
+                alertList.setAttribute('aria-live', 'polite'); // Re-enable live region
+            }
+            
+            updateMarketPulse(pulse) {
+                document.getElementById('pulseValue').textContent = pulse.momentum.toFixed(2);
+                document.getElementById('volatilityValue').textContent = pulse.volatility.toFixed(2);
+                document.getElementById('pulseState').textContent = pulse.state;
+                
+                const stateElement = document.getElementById('pulseState');
+                stateElement.className = 'pulse-state';
+                if (pulse.state.includes('BULL')) stateElement.classList.add('change-positive');
+                else if (pulse.state.includes('BEAR')) stateElement.classList.add('change-negative');
+                else if (pulse.state.includes('CHAOS')) stateElement.classList.add('emerging-pattern');
+            }
+            
+            startDataUpdates() {
+                if (this.dataUpdateInterval) clearInterval(this.dataUpdateInterval);
+
+                // Update prices every 60 seconds
+                this.dataUpdateInterval = setInterval(async () => {
+                    await this.fetchLatestPrices();
+                    this.renderStockCards();
+                    if (this.particleSystem) this.particleSystem.updateStocks(this.stocks);
+                }, this.settings.refreshInterval * 1000);
+            }
+        }
+        
+        // Particle System and other classes (condensed for brevity)
+        class MarketParticleSystem {
+            constructor(stocks) {
+                this.stocks = stocks;
+                this.particles = [];
+                this.canvas = null;
+                this.ctx = null;
+                this.spatialGrid = null;
+                this.cellSize = 120; // Should be at least the interaction radius
+                this.rules = { attraction: 0.15, repulsion: 0.08, alignment: 0.03, volatility: 0.15 };
+            }
+            
+            initializeCanvas(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+                this.initializeParticles();
+            }
+            
+            resizeCanvas() {
+                if (this.canvas) {
+                    this.canvas.width = this.canvas.offsetWidth;
+                    this.canvas.height = this.canvas.offsetHeight;
+                }
+            }
+            
+            initializeParticles() {
+                this.particles = this.stocks.map(stock => ({
+                    symbol: stock.symbol,
+                    x: Math.random() * this.canvas.width,
+                    y: Math.random() * this.canvas.height,
+                    vx: 0, vy: 0,
+                    size: Math.max(8, Math.log(stock.volume) / 8),
+                    color: this.getSentimentColor(stock.change),
+                    price: stock.price,
+                    change: stock.change,
+                    sector: stock.sector
+                }));
+            }
+            
+            getSentimentColor(change) {
+                if (change > 2) return '#10b981';
+                if (change > 0) return '#34d399';
+                if (change > -2) return '#f87171';
+                return '#ef4444';
+            }
+            
+            addParticle(stock) {
+                this.particles.push({
+                    symbol: stock.symbol,
+                    x: Math.random() * this.canvas.width,
+                    y: Math.random() * this.canvas.height,
+                    vx: 0, vy: 0,
+                    size: Math.max(8, Math.log(stock.volume) / 8),
+                    color: this.getSentimentColor(stock.change),
+                    price: stock.price,
+                    change: stock.change,
+                    sector: stock.sector
+                });
+            }
+            
+            removeParticle(symbol) {
+                const index = this.particles.findIndex(p => p.symbol === symbol);
+                if (index > -1) this.particles.splice(index, 1);
+            }
+
+            update() {
+                // 1. Build the spatial grid for this frame
+                this.spatialGrid = new Map();
+                this.particles.forEach(p => {
+                    const cellX = Math.floor(p.x / this.cellSize);
+                    const cellY = Math.floor(p.y / this.cellSize);
+                    const key = `${cellX},${cellY}`;
+                    if (!this.spatialGrid.has(key)) {
+                        this.spatialGrid.set(key, []);
+                    }
+                    this.spatialGrid.get(key).push(p);
+                });
+
+                this.particles.forEach(particle => {
+                    const neighbors = this.getNeighbors(particle);
+                    const forces = [
+                        this.calculateAttraction(particle, neighbors),
+                        this.calculateRepulsion(particle, neighbors),
+                        this.calculateAlignment(particle, neighbors)
+                    ];
+                    
+                    forces.forEach(f => {
+                        particle.vx += f.x;
+                        particle.vy += f.y;
+                    });
+                    
+                    particle.vx += (Math.random() - 0.5) * this.rules.volatility;
+                    particle.vy += (Math.random() - 0.5) * this.rules.volatility;
+                    particle.vx *= 0.97;
+                    particle.vy *= 0.97;
+                    
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    
+                    if (particle.x < 0 || particle.x > this.canvas.width) {
+                        particle.vx *= -0.5;
+                        particle.x = Math.max(0, Math.min(this.canvas.width, particle.x));
+                    }
+                    if (particle.y < 0 || particle.y > this.canvas.height) {
+                        particle.vy *= -0.5;
+                        particle.y = Math.max(0, Math.min(this.canvas.height, particle.y));
+                    }
+                });
+            }
+            
+            calculateAttraction(particle, neighbors) {
+                let fx = 0, fy = 0, count = 0;
+                neighbors.forEach(n => {
+                    if (Math.sign(n.change) === Math.sign(particle.change)) {
+                        const dx = n.x - particle.x, dy = n.y - particle.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance > 0) {
+                            fx += dx / distance * this.rules.attraction;
+                            fy += dy / distance * this.rules.attraction;
+                            count++;
+                        }
+                    }
+                });
+                return count > 0 ? { x: fx / count, y: fy / count } : { x: 0, y: 0 };
+            }
+            
+            calculateRepulsion(particle, neighbors) {
+                let fx = 0, fy = 0;
+                neighbors.forEach(n => {
+                    const dx = particle.x - n.x, dy = particle.y - n.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance > 0 && distance < 60) {
+                        fx += dx / distance * this.rules.repulsion * (60 - distance) / 60;
+                        fy += dy / distance * this.rules.repulsion * (60 - distance) / 60;
+                    }
+                });
+                return { x: fx, y: fy };
+            }
+            
+            calculateAlignment(particle, neighbors) {
+                let avgVx = 0, avgVy = 0, count = 0;
+                neighbors.forEach(n => {
+                    if (n.sector === particle.sector) {
+                        avgVx += n.vx;
+                        avgVy += n.vy;
+                        count++;
+                    }
+                });
+                if (count > 0) {
+                    avgVx /= count;
+                    avgVy /= count;
+                    return {
+                        x: (avgVx - particle.vx) * this.rules.alignment,
+                        y: (avgVy - particle.vy) * this.rules.alignment
+                    };
+                }
+                return { x: 0, y: 0 };
+            }
+            
+            getNeighbors(particle) {
+                const neighbors = [];
+                const radius = this.cellSize;
+                const pCellX = Math.floor(particle.x / this.cellSize);
+                const pCellY = Math.floor(particle.y / this.cellSize);
+
+                for (let x = -1; x <= 1; x++) {
+                    for (let y = -1; y <= 1; y++) {
+                        const key = `${pCellX + x},${pCellY + y}`;
+                        if (this.spatialGrid.has(key)) {
+                            for (const other of this.spatialGrid.get(key)) {
+                                if (other !== particle) {
+                                    const dx = particle.x - other.x;
+                                    const dy = particle.y - other.y;
+                                    if (dx * dx + dy * dy < radius * radius) {
+                                        neighbors.push(other);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return neighbors;
+            }
+            
+            render() {
+                this.ctx.fillStyle = 'rgba(15, 23, 42, 0.15)';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw connections
+                this.particles.forEach(particle => {
+                    this.getNeighbors(particle).forEach(neighbor => {
+                        if (Math.sign(particle.change) === Math.sign(neighbor.change)) {
+                            const gradient = this.ctx.createLinearGradient(
+                                particle.x, particle.y, neighbor.x, neighbor.y
+                            );
+                            gradient.addColorStop(0, particle.change > 0 ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)');
+                            gradient.addColorStop(1, particle.change > 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)');
+                            
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(particle.x, particle.y);
+                            this.ctx.lineTo(neighbor.x, neighbor.y);
+                            this.ctx.strokeStyle = gradient;
+                            this.ctx.lineWidth = 2;
+                            this.ctx.stroke();
+                        }
+                    });
+                });
+                
+                // Draw particles
+                this.particles.forEach(particle => {
+                    const gradient = this.ctx.createRadialGradient(
+                        particle.x, particle.y, 0,
+                        particle.x, particle.y, particle.size * 3
+                    );
+                    gradient.addColorStop(0, particle.color + 'AA');
+                    gradient.addColorStop(0.5, particle.color + '44');
+                    gradient.addColorStop(1, particle.color + '00');
+                    
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.beginPath();
+                    this.ctx.arc(particle.x, particle.y, particle.size * 3, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    this.ctx.beginPath();
+                    this.ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                    this.ctx.fillStyle = particle.color;
+                    this.ctx.fill();
+                    
+                    this.ctx.shadowColor = particle.color;
+                    this.ctx.shadowBlur = 10;
+                    this.ctx.fillStyle = '#f8fafc';
+                    this.ctx.font = 'bold 11px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillText(particle.symbol, particle.x, particle.y);
+                    this.ctx.shadowBlur = 0;
+                });
+            }
+            
+            updateStocks(stocks) {
+                this.stocks = stocks;
+                this.particles.forEach((particle, i) => {
+                    if (stocks[i]) {
+                        particle.change = stocks[i].change;
+                        particle.price = stocks[i].price;
+                        particle.color = this.getSentimentColor(stocks[i].change);
+                    }
+                });
+            }
+            
+            reset() {
+                this.resizeCanvas();
+                this.initializeParticles();
+            }
+        }
+        
+        class PatternEmergence {
+            constructor(stocks) { this.stocks = stocks; }
+            
+            detectEmergentPatterns(stocks) {
+                const patterns = [];
+                
+                const bullStocks = stocks.filter(s => s.change > 1);
+                if (bullStocks.length >= 3) {
+                    patterns.push({
+                        type: 'momentum_cluster',
+                        stocks: bullStocks.slice(0, 3).map(s => s.symbol),
+                        strength: bullStocks.length / stocks.length
+                    });
+                }
+                
+                const sectors = {};
+                stocks.forEach(s => {
+                    if (!sectors[s.sector]) sectors[s.sector] = [];
+                    sectors[s.sector].push(s);
+                });
+                
+                Object.entries(sectors).forEach(([sector, sectorStocks]) => {
+                    if (sectorStocks.length >= 2) {
+                        const sameDirection = sectorStocks.filter(s => 
+                            Math.sign(s.change) === Math.sign(sectorStocks[0].change)
+                        ).length;
+                        
+                        if (sameDirection / sectorStocks.length >= 0.7) {
+                            patterns.push({
+                                type: 'sector_movement',
+                                stocks: sectorStocks.map(s => s.symbol),
+                                strength: sameDirection / sectorStocks.length
+                            });
+                        }
+                    }
+                });
+                
+                const avgVolume = stocks.reduce((sum, s) => sum + s.volume, 0) / stocks.length;
+                const highVolume = stocks.filter(s => s.volume > avgVolume * 1.5);
+                if (highVolume.length > 0) {
+                    patterns.push({
+                        type: 'volume_anomaly',
+                        stocks: highVolume.map(s => s.symbol),
+                        strength: 0.9
+                    });
+                }
+                return patterns;
+            }
+        }
+        
+        class MarketPulse {
+            constructor(stocks) { this.stocks = stocks; }
+            
+            calculateMarketPulse(stocks) {
+                const momentum = stocks.filter(s => s.change > 0).length / stocks.length;
+                const volatility = Math.min(1, stocks.reduce((sum, s) => sum + Math.abs(s.changePercent), 0) / stocks.length / 5);
+                
+                let state = '⚖️ EQUILIBRIUM';
+                if (momentum > 0.7 && volatility < 0.4) state = '🐂 BULL EMERGENCE';
+                else if (momentum < 0.3 && volatility > 0.6) state = '🐻 BEAR EMERGENCE';
+                else if (volatility > 0.7) state = '🌪️ CHAOS EMERGENCE';
+                
+                return { state, momentum, volatility };
+            }
+        }
+
+        // Add the notification logic to the main class
+        EmergentStockMonitor.prototype.showNotification = function(message, type = 'info', duration = 5000) {
+            const container = document.getElementById('notification-container');
+            if (!container) {
+                console.error('Notification container not found!');
+                return;
+            }
+
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            
+            const messageSpan = document.createElement('span');
+            messageSpan.textContent = message;
+
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '&times;';
+            closeBtn.className = 'notification-close';
+            
+            notification.appendChild(messageSpan);
+            notification.appendChild(closeBtn);
+
+            const removeNotification = () => {
+                notification.classList.add('notification-fade-out');
+                notification.addEventListener('animationend', () => {
+                    if (container.contains(notification)) {
+                        container.removeChild(notification);
+                    }
+                });
+            };
+
+            closeBtn.onclick = removeNotification;
+
+            container.appendChild(notification);
+
+            // Auto-dismiss
+            if (duration) {
+                setTimeout(() => {
+                    removeNotification();
+                }, duration);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => new EmergentStockMonitor());
+    </script>
+</body>
+</html>
