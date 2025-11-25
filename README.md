@@ -73,7 +73,9 @@ The "Emergent View" is unique because it makes complex, correlated market behavi
 ## 🛠️ Technology Stack
 
 - **Frontend**: HTML5, CSS3, and **Vanilla JavaScript (ES6+)** for all application logic and the custom physics simulation.
-- **APIs & Data**: **Yahoo Finance API** is used as the source for all stock quote data.
+- **APIs & Data**:
+  - **Source Agnostic Data Feed**: The system utilizes a flexible data ingestion layer designed to handle diverse financial assets, including **Cryptocurrencies** (such as the data used for the Emergent Particle System) and traditional Stocks.
+  - **Data Providers**: The application typically integrates with major crypto market data APIs (e.g., CoinGecko, CoinMarketCap) or general market data providers to source real-time **Quote Data** for all monitored assets.
 
 ***
 
